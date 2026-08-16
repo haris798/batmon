@@ -1,0 +1,22 @@
+--- app/src/main/java/com/example/ui/components/BatteryMonitorScreen.kt
++++ app/src/main/java/com/example/ui/components/BatteryMonitorScreen.kt
+@@ -445,7 +445,7 @@
+ @Composable
+ fun ForegroundAppUsageSection(uiState: BatteryUiState) {
+     CustomCard {
+-        SectionTitle("Foreground Apps", badge = "Estimated")
++        SectionTitle("Foreground app battery usage", badge = "Estimated")
+         
+         val apps = uiState.usageStats?.appUsage ?: emptyList()
+         if (apps.isEmpty()) {
+@@ -476,7 +476,7 @@
+         Column(modifier = Modifier.weight(1f)) {
+             Row(
+                 modifier = Modifier.fillMaxWidth(),
+                 horizontalArrangement = Arrangement.SpaceBetween
+             ) {
+-                Text(app.appName, fontSize = 12.sp, fontWeight = FontWeight.Medium)
++                Text(app.appName, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, modifier = Modifier.weight(1f))
++                Text(if (app.usageTimeMs > 0) formatDuration(app.usageTimeMs) else "< 1m", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp))
+                 Text("${formatFloat(app.percentage)}%", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+             }

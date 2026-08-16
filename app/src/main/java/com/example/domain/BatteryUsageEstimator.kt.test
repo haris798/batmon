@@ -1,0 +1,8 @@
+package com.example.domain
+import android.app.usage.UsageStatsManager
+import android.content.Context
+fun test(context: Context) {
+    val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+    val stats = usageStatsManager.queryAndAggregateUsageStats(0, 1000)
+    val time = stats["com.example"]?.totalTimeInForeground
+}
