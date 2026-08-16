@@ -295,7 +295,7 @@ fun DischargeStatusSection(uiState: BatteryUiState) {
         val stats = uiState.usageStats
         
         val currentStr = if (sample != null && sample.currentMa != 0) {
-            val powerW = (sample.voltageMv / 1000f) * (sample.currentMa / 1000f)
+            val powerW = com.example.utils.BatteryStatsParser.calculatePowerW(sample.voltageMv, sample.currentMa)
             "${formatFloat(powerW)} W / ${sample.currentMa} mA"
         } else "Unavailable"
         

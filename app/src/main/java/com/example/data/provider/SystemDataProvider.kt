@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.PowerManager
+import com.example.utils.BatteryStatsParser
 
 interface SystemDataProvider {
     fun getBatteryPercentage(): Float
@@ -20,25 +21,18 @@ interface SystemDataProvider {
 }
 
 class SystemDataProviderImpl(private val context: Context) : SystemDataProvider {
-
     private val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
     private val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
     private val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
 
     override fun getBatteryPercentage(): Float {
         val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
-        val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
-        return if (level != -1 && scale != -1) {
-            (level.toFloat() / scale.toFloat()) * 100f
-        } else {
-            0f
-        }
+        return BatteryStatsParser.parseBatteryPercentage(batteryIntent)
     }
 
     override fun getVoltageMv(): Int {
         val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        return batteryIntent?.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1) ?: -1
+        return BatteryStatsParser.parseVoltageMv(batteryIntent)
     }
 
     override fun getCurrentMa(): Int {
@@ -58,18 +52,12 @@ class SystemDataProviderImpl(private val context: Context) : SystemDataProvider 
 
     override fun getTemperatureC(): Float {
         val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        val tempTenths = batteryIntent?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1) ?: -1
-        return if (tempTenths != -1) {
-            tempTenths / 10f
-        } else {
-            0f
-        }
+        return BatteryStatsParser.parseTemperatureC(batteryIntent)
     }
 
     override fun isCharging(): Boolean {
         val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        val status = batteryIntent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-        return status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
+        return BatteryStatsParser.parseIsCharging(batteryIntent)
     }
 
     override fun isScreenOn(): Boolean {

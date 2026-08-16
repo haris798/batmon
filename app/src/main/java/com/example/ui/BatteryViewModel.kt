@@ -19,7 +19,8 @@ data class BatteryUiState(
     val latestSample: BatterySampleEntity? = null,
     val activeSession: DischargeSessionEntity? = null,
     val usageStats: UsageStats? = null,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+    val errorMessage: String? = null
 )
 
 class BatteryViewModel(
@@ -29,18 +30,21 @@ class BatteryViewModel(
 
     private val _isLoading = MutableStateFlow(true)
     private val _usageStats = MutableStateFlow<UsageStats?>(null)
+    private val _errorMessage = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<BatteryUiState> = combine(
         repository.getLatestSample(),
         repository.getLatestSessionFlow(),
         _usageStats,
-        _isLoading
-    ) { sample, session, stats, loading ->
+        _isLoading,
+        _errorMessage
+    ) { sample, session, stats, loading, error ->
         BatteryUiState(
             latestSample = sample,
             activeSession = session,
             usageStats = stats,
-            isLoading = loading
+            isLoading = loading,
+            errorMessage = error
         )
     }.stateIn(
         scope = viewModelScope,
@@ -52,7 +56,16 @@ class BatteryViewModel(
         // Start foreground sampling loop for baseline heartbeat
         viewModelScope.launch {
             while (true) {
-                repository.recordSample()
+                try {
+                    repository.recordSample()
+                    _errorMessage.value = null
+                } catch (e: SecurityException) {
+                    _errorMessage.value = "Missing permissions to access battery or usage stats."
+                    _isLoading.value = false
+                } catch (e: Exception) {
+                    _errorMessage.value = "Failed to access system data: ${e.localizedMessage}"
+                    _isLoading.value = false
+                }
                 delay(60_000) // Heartbeat every 60 seconds
             }
         }
@@ -63,17 +76,34 @@ class BatteryViewModel(
                 updateStats()
             }
         }
+        
+        // Periodic cleanup
+        viewModelScope.launch {
+            while (true) {
+                repository.purgeOldSamples()
+                delay(24 * 60 * 60 * 1000) // Cleanup daily
+            }
+        }
     }
 
     private suspend fun updateStats() {
-        // Get samples for the current session or last 24h if no session
-        val latestSession = repository.getLatestSessionFlow().stateIn(viewModelScope, SharingStarted.Eagerly, null).value
-        
-        val since = latestSession?.startTime ?: (System.currentTimeMillis() - 24 * 60 * 60 * 1000)
-        
-        val samples = repository.getSamplesSince(since)
-        val stats = estimator.estimateUsage(samples)
-        _usageStats.value = stats
-        _isLoading.value = false
+        try {
+            // Get samples for the current session or last 24h if no session
+            val latestSession = repository.getLatestSessionFlow().stateIn(viewModelScope, SharingStarted.Eagerly, null).value
+            
+            val since = latestSession?.startTime ?: (System.currentTimeMillis() - 24 * 60 * 60 * 1000)
+            
+            val samples = repository.getSamplesSince(since)
+            val stats = estimator.estimateUsage(samples)
+            _usageStats.value = stats
+            _errorMessage.value = null
+            _isLoading.value = false
+        } catch (e: SecurityException) {
+            _errorMessage.value = "Permission required to access usage statistics."
+            _isLoading.value = false
+        } catch (e: Exception) {
+            _errorMessage.value = "Error estimating battery usage: ${e.localizedMessage}"
+            _isLoading.value = false
+        }
     }
 }

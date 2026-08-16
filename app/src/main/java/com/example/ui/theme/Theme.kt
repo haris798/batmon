@@ -18,13 +18,14 @@ import androidx.core.view.WindowCompat
 
 private val DarkColorScheme =
   darkColorScheme(
-    primary = GreenPrimary,
+    primary = GreenPrimaryDarkTheme,
+    onPrimary = Color.Black,
+    primaryContainer = GreenPrimaryContainerDark,
+    onPrimaryContainer = GreenOnPrimaryContainerDark,
     secondary = GreenPrimaryDark,
     tertiary = RedAccent,
     background = BackgroundDark,
     surface = CardBackgroundDark,
-    onPrimary = Color.White,
-    onSecondary = Color.White,
     onBackground = TextPrimaryDark,
     onSurface = TextPrimaryDark,
     outline = OutlineColorDark,

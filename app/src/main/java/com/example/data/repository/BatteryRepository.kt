@@ -26,7 +26,7 @@ class BatteryRepository(
     suspend fun recordSample() {
         val currentMa = dataProvider.getCurrentMa()
         val voltageMv = dataProvider.getVoltageMv()
-        val powerMw = (currentMa.toFloat() * voltageMv.toFloat() / 1000f).toInt()
+        val powerMw = (com.example.utils.BatteryStatsParser.calculatePowerW(voltageMv, currentMa) * 1000f).toInt()
         
         val sample = BatterySampleEntity(
             timestamp = System.currentTimeMillis(),
